@@ -1,0 +1,10 @@
+{
+  "/gnews": {
+    "target": "https://gnews.io/api/v4",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/gnews": ""
+    }
+  }
+}

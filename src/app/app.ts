@@ -1,12 +1,10 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { NewsHomeComponent } from './pages/news-home/news-home';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  standalone: true,
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  imports: [NewsHomeComponent]
 })
-export class App {
-  protected readonly title = signal('gnews-web');
-}
+export class App {}

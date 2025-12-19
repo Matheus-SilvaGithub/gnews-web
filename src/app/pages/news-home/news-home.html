@@ -1,0 +1,37 @@
+<h2>📰 Principais Manchetes</h2>
+
+<div class="controls">
+  <select [(ngModel)]="category" (change)="loadNews(true)">
+    <option value="general">Geral</option>
+    <option value="technology">Tecnologia</option>
+    <option value="business">Negócios</option>
+    <option value="sports">Esportes</option>
+  </select>
+
+  <label>
+    <input type="checkbox" (change)="toggleInfinite()" />
+    Infinite scroll
+  </label>
+</div>
+
+<p *ngIf="loading">Carregando notícias...</p>
+
+<div class="grid">
+  <div class="card" *ngFor="let article of articles">
+    <img *ngIf="article.image" [src]="article.image">
+    <h3>{{ article.title }}</h3>
+    <small>{{ article.publishedAt | date:'dd/MM/yyyy HH:mm' }}</small>
+    <p>{{ article.description }}</p>
+    <a [href]="article.url" target="_blank">Ler mais</a>
+  </div>
+</div>
+
+<p *ngIf="loadingMore">Carregando mais...</p>
+
+<div *ngIf="!useInfinite" class="pagination">
+  <button (click)="prevPage()" [disabled]="page === 1">Anterior</button>
+  <span>{{ page }} / {{ totalPages }}</span>
+  <button (click)="nextPage()" [disabled]="page === totalPages">Próxima</button>
+</div>
+
+<div #anchor></div>

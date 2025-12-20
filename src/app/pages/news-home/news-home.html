@@ -1,37 +1,101 @@
-<h2>📰 Principais Manchetes</h2>
+<h2>📰 Notícias</h2>
 
 <div class="controls">
-  <select [(ngModel)]="category" (change)="loadNews(true)">
+
+  <input
+    type="text"
+    placeholder="Pesquisar notícias"
+    [(ngModel)]="searchTerm"
+    (keyup.enter)="search()"
+    [disabled]="loading || loadingMore"
+  />
+
+  <button
+    (click)="search()"
+    [disabled]="loading || loadingMore || !searchTerm.trim()">
+    Buscar
+  </button>
+
+  @if (isSearchMode) {
+    <button
+      (click)="clearSearch()"
+      [disabled]="loading || loadingMore">
+      Limpar
+    </button>
+  }
+
+  <select
+    [(ngModel)]="category"
+    (change)="loadNews(true)"
+    [disabled]="isSearchMode || loading || loadingMore">
+
     <option value="general">Geral</option>
     <option value="technology">Tecnologia</option>
     <option value="business">Negócios</option>
     <option value="sports">Esportes</option>
+    <option value="entertainment">Entretenimento</option>
+    <option value="health">Saúde</option>
+    <option value="science">Ciência</option>
   </select>
 
-  <label>
-    <input type="checkbox" (change)="toggleInfinite()" />
-    Infinite scroll
-  </label>
 </div>
 
-<p *ngIf="loading">Carregando notícias...</p>
+<!-- Skeleton loader -->
+@if (loading) {
+  <div class="grid">
+    @for (s of skeletons; track $index) {
+      <div class="card skeleton">
+        <div class="img"></div>
+        <div class="line title"></div>
+        <div class="line"></div>
+        <div class="line short"></div>
+      </div>
+    }
+  </div>
+}
+
+@if (error) {
+  <p class="status error">❌ Erro ao carregar notícias</p>
+}
+
+@if (!loading && !error && articles.length === 0) {
+  <p class="status empty">⚠️ Nenhuma notícia encontrada</p>
+}
 
 <div class="grid">
-  <div class="card" *ngFor="let article of articles">
-    <img *ngIf="article.image" [src]="article.image">
-    <h3>{{ article.title }}</h3>
-    <small>{{ article.publishedAt | date:'dd/MM/yyyy HH:mm' }}</small>
-    <p>{{ article.description }}</p>
-    <a [href]="article.url" target="_blank">Ler mais</a>
-  </div>
+  @for (article of articles; track article.id; let i = $index) {
+    <article class="card" [class.featured]="i === 0 && page === 1">
+
+      @if (article.image) {
+        <img
+          [src]="article.image"
+          [alt]="article.title"
+          loading="lazy"
+        />
+      }
+
+      <h3>{{ article.title }}</h3>
+
+      <small>
+        {{ article.publishedAt | date:'dd/MM/yyyy HH:mm' }}
+      </small>
+
+      <p>{{ article.description }}</p>
+
+      <a [href]="article.url" target="_blank" rel="noopener">
+        Ler mais →
+      </a>
+
+    </article>
+  }
 </div>
 
-<p *ngIf="loadingMore">Carregando mais...</p>
+@if (loadingMore) {
+  <p class="status loading-more">⬇️ Carregando mais notícias...</p>
+}
 
-<div *ngIf="!useInfinite" class="pagination">
-  <button (click)="prevPage()" [disabled]="page === 1">Anterior</button>
-  <span>{{ page }} / {{ totalPages }}</span>
-  <button (click)="nextPage()" [disabled]="page === totalPages">Próxima</button>
-</div>
+@if (!loading && !loadingMore && page >= totalPages && articles.length > 0) {
+  <p class="status end">🛑 Você chegou ao fim das notícias</p>
+}
 
 <div #anchor></div>

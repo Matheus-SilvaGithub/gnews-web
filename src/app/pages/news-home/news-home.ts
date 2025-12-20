@@ -1,35 +1,50 @@
 import {
   Component,
   OnInit,
+  AfterViewInit,
+  OnDestroy,
   ViewChild,
   ElementRef
 } from '@angular/core';
-import { NgFor, NgIf, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
+
 import { GnewsService } from '../../service/gnews.service';
 import { Article } from '../../models/article.model';
 
 @Component({
   selector: 'app-news-home',
   standalone: true,
-  imports: [NgIf, NgFor, FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe],
   templateUrl: './news-home.html',
   styleUrls: ['./news-home.css']
 })
-export class NewsHomeComponent implements OnInit {
+export class NewsHomeComponent
+  implements OnInit, AfterViewInit, OnDestroy {
 
   articles: Article[] = [];
-  loading = true;
+
+  loading = false;        // 🔥 CORREÇÃO CRÍTICA
   loadingMore = false;
+  error = false;
 
   category = 'general';
-  lang = 'en';
+  lang = 'pt';            // 🔥 melhor retorno
+  searchTerm = '';
+
   max = 10;
   page = 1;
   totalPages = 1;
-  useInfinite = false;
 
-  @ViewChild('anchor') anchor!: ElementRef;
+  isSearchMode = false;
+  useInfinite = true;
+
+  skeletons = Array.from({ length: 6 });
+
+  sub?: Subscription;
+
+  @ViewChild('anchor') anchor?: ElementRef;
   observer?: IntersectionObserver;
 
   constructor(private gnews: GnewsService) {}
@@ -38,55 +53,85 @@ export class NewsHomeComponent implements OnInit {
     this.loadNews(true);
   }
 
-  loadNews(reset: boolean) {
+  ngAfterViewInit(): void {
+    this.setupObserver();
+  }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+    this.observer?.disconnect();
+  }
+
+  loadNews(reset: boolean): void {
+
+    if (this.loadingMore) return;
+
     if (reset) {
       this.page = 1;
       this.articles = [];
       this.loading = true;
+      this.error = false;
     } else {
+      if (this.page >= this.totalPages) return;
       this.loadingMore = true;
     }
 
-    this.gnews.getTopHeadlines(this.category, this.lang, undefined, this.max, this.page)
-      .subscribe(res => {
-        this.totalPages = Math.ceil(res.totalArticles / this.max);
-        this.articles = [...this.articles, ...res.articles];
+    this.sub?.unsubscribe();
+
+    const request$ =
+      this.isSearchMode && this.searchTerm.trim()
+        ? this.gnews.searchNews(this.searchTerm.trim(), this.lang, this.max, this.page)
+        : this.gnews.getTopHeadlines(this.category, this.lang, undefined, this.max, this.page);
+
+    this.sub = request$.subscribe({
+      next: res => {
+        this.totalPages = Math.max(1, Math.ceil(res.totalArticles / this.max));
+
+        this.articles = reset
+          ? res.articles
+          : [...this.articles, ...res.articles];
+
         this.loading = false;
         this.loadingMore = false;
-        this.setupObserver();
-      });
+      },
+      error: err => {
+        console.error('Erro GNews:', err);
+        this.loading = false;
+        this.loadingMore = false;
+        this.error = true;
+      }
+    });
   }
 
-  nextPage() {
-    if (this.page < this.totalPages) {
-      this.page++;
-      this.loadNews(true);
-    }
-  }
-
-  prevPage() {
-    if (this.page > 1) {
-      this.page--;
-      this.loadNews(true);
-    }
-  }
-
-  toggleInfinite() {
-    this.useInfinite = !this.useInfinite;
+  search(): void {
+    if (!this.searchTerm.trim()) return;
+    this.isSearchMode = true;
+    this.gnews.clearCache();
     this.loadNews(true);
   }
 
-  setupObserver() {
-    if (!this.useInfinite || !this.anchor) return;
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.isSearchMode = false;
+    this.gnews.clearCache();
+    this.loadNews(true);
+  }
 
-    this.observer?.disconnect();
+  setupObserver(): void {
+    if (!this.anchor) return;
 
     this.observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && this.page < this.totalPages) {
+      if (
+        entries[0].isIntersecting &&
+        this.useInfinite &&
+        !this.loading &&
+        !this.loadingMore &&
+        this.page < this.totalPages
+      ) {
         this.page++;
         this.loadNews(false);
       }
-    }, { rootMargin: '300px' });
+    }, { rootMargin: '600px' });
 
     this.observer.observe(this.anchor.nativeElement);
   }

@@ -8,7 +8,7 @@ import { GNewsResponse } from '../models/article.model';
 })
 export class GnewsService {
 
-  private apiKey = '';
+  private apiKey = '3b8c8fc973fa2acaedbec56b1c88c343';
   private baseUrl = '/gnews';
 
   private cache = new Map<string, Observable<GNewsResponse>>();

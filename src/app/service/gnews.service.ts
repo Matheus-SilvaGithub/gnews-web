@@ -8,52 +8,49 @@ import { GNewsResponse } from '../models/article.model';
 })
 export class GnewsService {
 
-  private apiKey = '';
-  private baseUrl = '/gnews';
+  private readonly apiKey = '3b8c8fc973fa2acaedbec56b1c88c343';
+  private readonly baseUrl = '/gnews';
 
   private cache = new Map<string, Observable<GNewsResponse>>();
 
   constructor(private http: HttpClient) {}
 
+  // 🔹 TOP HEADLINES
   getTopHeadlines(
     category: string,
     lang: string,
-    country?: string,
     max = 10,
     page = 1
   ): Observable<GNewsResponse> {
 
-    const key = `top-${category}-${lang}-${country}-${max}-${page}`;
+    const cacheKey = `top-${category}-${lang}-${max}-${page}`;
 
-    if (this.cache.has(key)) {
-      return this.cache.get(key)!;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)!;
     }
 
-    let params = new HttpParams()
+    const params = new HttpParams()
       .set('category', category)
-      .set('apikey', this.apiKey)
       .set('lang', lang)
       .set('max', max)
-      .set('page', page);
-
-    if (country) {
-      params = params.set('country', country);
-    }
+      .set('page', page)
+      .set('apikey', this.apiKey);
 
     const request$ = this.http
       .get<GNewsResponse>(`${this.baseUrl}/top-headlines`, { params })
       .pipe(
         shareReplay(1),
         catchError(err => {
-          this.cache.delete(key); // 🔥 não cacheia erro
+          this.cache.delete(cacheKey);
           return throwError(() => err);
         })
       );
 
-    this.cache.set(key, request$);
+    this.cache.set(cacheKey, request$);
     return request$;
   }
 
+  // 🔍 SEARCH
   searchNews(
     query: string,
     lang: string,
@@ -61,33 +58,34 @@ export class GnewsService {
     page = 1
   ): Observable<GNewsResponse> {
 
-    const key = `search-${query}-${lang}-${max}-${page}`;
+    const cacheKey = `search-${query}-${lang}-${max}-${page}`;
 
-    if (this.cache.has(key)) {
-      return this.cache.get(key)!;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)!;
     }
 
     const params = new HttpParams()
       .set('q', query)
-      .set('apikey', this.apiKey)
       .set('lang', lang)
       .set('max', max)
-      .set('page', page);
+      .set('page', page)
+      .set('apikey', this.apiKey);
 
     const request$ = this.http
       .get<GNewsResponse>(`${this.baseUrl}/search`, { params })
       .pipe(
         shareReplay(1),
         catchError(err => {
-          this.cache.delete(key);
+          this.cache.delete(cacheKey);
           return throwError(() => err);
         })
       );
 
-    this.cache.set(key, request$);
+    this.cache.set(cacheKey, request$);
     return request$;
   }
 
+  // 🧹 LIMPAR CACHE (ESSENCIAL)
   clearCache(): void {
     this.cache.clear();
   }

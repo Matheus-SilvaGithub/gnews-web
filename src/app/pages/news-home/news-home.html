@@ -2,32 +2,36 @@
 
 <div class="controls">
 
+  <!-- 🔍 Busca -->
   <input
     type="text"
     placeholder="Pesquisar notícias"
     [(ngModel)]="searchTerm"
     (keyup.enter)="search()"
-    [disabled]="loading || loadingMore"
   />
 
   <button
     (click)="search()"
-    [disabled]="loading || loadingMore || !searchTerm.trim()">
+    [disabled]="!searchTerm.trim() || loading">
     Buscar
   </button>
 
   @if (isSearchMode) {
-    <button
-      (click)="clearSearch()"
-      [disabled]="loading || loadingMore">
+    <button (click)="clearSearch()">
       Limpar
     </button>
   }
 
+  <!-- 🔄 Atualizar -->
+  <button (click)="refresh()">
+    Atualizar
+  </button>
+
+  <!-- 📂 Categoria -->
   <select
     [(ngModel)]="category"
-    (change)="loadNews(true)"
-    [disabled]="isSearchMode || loading || loadingMore">
+    (change)="loadNews()"
+    [disabled]="isSearchMode">
 
     <option value="general">Geral</option>
     <option value="technology">Tecnologia</option>
@@ -40,7 +44,7 @@
 
 </div>
 
-<!-- Skeleton loader -->
+<!-- 🦴 Skeleton loader -->
 @if (loading) {
   <div class="grid">
     @for (s of skeletons; track $index) {
@@ -54,48 +58,52 @@
   </div>
 }
 
+<!-- ❌ Erro -->
 @if (error) {
-  <p class="status error">❌ Erro ao carregar notícias</p>
+  <p class="status error">
+    ❌ Erro ao carregar notícias. Tente novamente.
+  </p>
 }
 
+<!-- ⚠️ Vazio -->
 @if (!loading && !error && articles.length === 0) {
-  <p class="status empty">⚠️ Nenhuma notícia encontrada</p>
+  <p class="status empty">
+    ⚠️ Nenhuma notícia encontrada.
+  </p>
 }
 
-<div class="grid">
-  @for (article of articles; track article.id; let i = $index) {
-    <article class="card" [class.featured]="i === 0 && page === 1">
+<!-- 📰 Lista -->
+@if (!loading && articles.length > 0) {
+  <div class="grid">
+    @for (article of articles; track article.id; let i = $index) {
+      <article
+        class="card"
+        [class.featured]="i === 0">
 
-      @if (article.image) {
-        <img
-          [src]="article.image"
-          [alt]="article.title"
-          loading="lazy"
-        />
-      }
+        @if (article.image) {
+          <img
+            [src]="article.image"
+            [alt]="article.title"
+            loading="lazy"
+          />
+        }
 
-      <h3>{{ article.title }}</h3>
+        <h3>{{ article.title }}</h3>
 
-      <small>
-        {{ article.publishedAt | date:'dd/MM/yyyy HH:mm' }}
-      </small>
+        <small>
+          {{ article.publishedAt | date:'dd/MM/yyyy HH:mm' }}
+        </small>
 
-      <p>{{ article.description }}</p>
+        <p>{{ article.description }}</p>
 
-      <a [href]="article.url" target="_blank" rel="noopener">
-        Ler mais →
-      </a>
+        <a
+          [href]="article.url"
+          target="_blank"
+          rel="noopener">
+          Ler mais →
+        </a>
 
-    </article>
-  }
-</div>
-
-@if (loadingMore) {
-  <p class="status loading-more">⬇️ Carregando mais notícias...</p>
+      </article>
+    }
+  </div>
 }
-
-@if (!loading && !loadingMore && page >= totalPages && articles.length > 0) {
-  <p class="status end">🛑 Você chegou ao fim das notícias</p>
-}
-
-<div #anchor></div>
